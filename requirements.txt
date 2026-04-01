@@ -1,3 +1,2 @@
+rdkit>=2023.3.1
 streamlit
-numpy
-pandas
