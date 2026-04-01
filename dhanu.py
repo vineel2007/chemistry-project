@@ -1,49 +1,75 @@
-import rdkit
+import streamlit as st
+import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import FindMolChiralCenters
+from rdkit.Chem import Draw
 
-def detect_chiral_centers(smiles, molecule_name):
-    # Print a nice header
-    header = f" Chiral Centers Analysis: {molecule_name} "
-    border = "=" * len(header)
-    print(f"\n{border}\n{header}\n{border}\n")
+# Set up page configurations
+st.set_page_config(page_title="Chiral Centers Analysis", page_icon="🔬", layout="wide")
 
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        print(f"[Error] Could not parse SMILES string for {molecule_name}\n")
-        return
+st.title("🔬 Chiral Centers Analysis")
+st.markdown("Enter a molecule's SMILES string to mathematically analyze its chiral centers and view its 2D visual structure.")
 
-    # FindMolChiralCenters returns a list of tuples: (atom_index, 'R' or 'S')
-    chiral_centers = FindMolChiralCenters(mol, includeUnassigned=True)
-    
-    if not chiral_centers:
-        print("[Info] No chiral centers found.\n")
+# Layout for the input settings
+col1, col2 = st.columns(2)
+
+with col1:
+    molecule_name = st.text_input("Molecule Name", value="Fidaxomicin")
+with col2:
+    # Default SMILES string for convenience
+    default_smiles = "ClC1=C(CC)C(C(O[C@H]2[C@H](O)[C@H](OC)[C@H](OC/C3=C\\C=C\\C[C@H](O)/C(C)=C/[C@H](CC)[C@@H](O[C@]4([H])OC(C)(C)[C@@H](OC(C(C)C)=O)[C@H](O)[C@@H]4O)/C(C)=C/C(C)=C/C[C@]([C@H](O)C)([H])OC3=O)O[C@@H]2C)=O)=C(O)C(Cl)=C1O"
+    smiles_input = st.text_input("SMILES String", value=default_smiles)
+
+if st.button("Analyze Chiral Centers", type="primary"):
+    if not smiles_input:
+        st.warning("Please enter a SMILES string to analyze.")
     else:
-        print(f"[Success] Successfully identified {len(chiral_centers)} chiral centers:\n")
+        # Load the molecule using RDKit
+        mol = Chem.MolFromSmiles(smiles_input)
         
-        # Table Header
-        print("+" + "-"*14 + "+" + "-"*15 + "+" + "-"*19 + "+")
-        print("| Atom Index   | Element       | Configuration     |")
-        print("+" + "-"*14 + "+" + "-"*15 + "+" + "-"*19 + "+")
-        
-        for atom_idx, config in chiral_centers:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            atom_symbol = atom.GetSymbol()
+        if mol is None:
+            st.error(f"Error: Could not parse SMILES string for {molecule_name}. Please check if the SMILES string is valid.")
+        else:
+            st.markdown("---")
+            # Divide the screen into two columns for results
+            res_col1, res_col2 = st.columns([1, 1.5])
             
-            # Ensure nice display for the configuration
-            config_str = f"({config})" if config != '?' else "Unknown (?)"
-            
-            # Print the table row
-            print(f"| {atom_idx:<12} | {atom_symbol:<13} | {config_str:<17} |")
-            
-        # Table Footer
-        print("+" + "-"*14 + "+" + "-"*15 + "+" + "-"*19 + "+")
-        print("\n" + border + "\n")
-
-if __name__ == "__main__":
-    # Isomeric SMILES for Fidaxomicin
-    fidaxomicin_smiles = "CCC1=C(C=C(C(=C1Cl)O)C(=O)O[C@H]2[C@@H]([C@H]([C@@H]([C@H](O2)C)O/C=C/C=C/C[C@H](C(=C)[C@@H](CC)[C@H](C(=C/C=C/C(=C/[C@@H](Cc3c(c(cc(c3Cl)O)C(=O)O[C@H]4[C@@H]([C@H]([C@@H]([C@@H](O4)C)OC)O)OC)O)O)C)C)O[C@H]5[C@H]([C@@H]([C@@H]([C@H](O5)C)OC(=O)C(C)C)O)O)O)OC)O)O"
-    # Using an explicitly retrieved Isomeric SMILES that contains the full structure:
-    fidaxomicin_smiles = "ClC1=C(CC)C(C(O[C@H]2[C@H](O)[C@H](OC)[C@H](OC/C3=C\\C=C\\C[C@H](O)/C(C)=C/[C@H](CC)[C@@H](O[C@]4([H])OC(C)(C)[C@@H](OC(C(C)C)=O)[C@H](O)[C@@H]4O)/C(C)=C/C(C)=C/C[C@]([C@H](O)C)([H])OC3=O)O[C@@H]2C)=O)=C(O)C(Cl)=C1O"
-    
-    detect_chiral_centers(fidaxomicin_smiles, "Fidaxomicin")
+            with res_col1:
+                st.subheader(f"Structure: {molecule_name}")
+                # RDKit drawing logic
+                try:
+                    # Provide highlights by identifying the chiral atoms
+                    chiral_centers = FindMolChiralCenters(mol, includeUnassigned=True)
+                    highlight_atoms = [idx for idx, _ in chiral_centers]
+                    
+                    # Generate an image with highlighted chiral centers
+                    img = Draw.MolToImage(mol, size=(500, 500), highlightAtoms=highlight_atoms)
+                    st.image(img, use_container_width=True, caption="Highlighted atoms are detected chiral centers.")
+                except Exception as e:
+                    st.error(f"Could not generate molecule image. Error: {e}")
+                
+            with res_col2:
+                st.subheader("Results")
+                
+                if not chiral_centers:
+                    st.info(f"No chiral carbon centers found in the provided SMILES for {molecule_name}.")
+                else:
+                    st.success(f"Successfully identified {len(chiral_centers)} chiral centers.")
+                    
+                    # Store data for display in a DataFrame
+                    data_rows = []
+                    for atom_idx, config in chiral_centers:
+                        atom = mol.GetAtomWithIdx(atom_idx)
+                        atom_symbol = atom.GetSymbol()
+                        config_str = config if config != '?' else "Unknown (?)"
+                        
+                        data_rows.append({
+                            "Atom Index": atom_idx,
+                            "Element": atom_symbol,
+                            "Configuration (R/S)": config_str
+                        })
+                    
+                    df = pd.DataFrame(data_rows)
+                    
+                    # Display as a dataframe for neat layout
+                    st.dataframe(df, use_container_width=True, hide_index=True)
