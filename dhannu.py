@@ -19,6 +19,30 @@ st.markdown("""
     font-family: 'Inter', sans-serif;
 }
 
+/* Student Info Badge */
+.student-info {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 0.9rem;
+    color: #f8fafc;
+    text-align: right;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25);
+    z-index: 1000;
+    line-height: 1.5;
+}
+.student-info .highlight {
+    color: #d946ef;
+    font-weight: 700;
+    margin-right: 5px;
+}
+
 /* Typography styles */
 h1, h2, h3, h4 {
     font-family: 'Outfit', sans-serif;
@@ -99,6 +123,13 @@ h1 {
     margin-bottom: 15px;
 }
 </style>
+
+<!-- Top Right Student Info Overlay -->
+<div class="student-info">
+    <div><span class="highlight">Name:</span>Dhanvanth B.Y</div>
+    <div><span class="highlight">Class:</span>AIML-A</div>
+    <div><span class="highlight">Roll No:</span>RA2511026050032</div>
+</div>
 """, unsafe_allow_html=True)
 
 st.title("Chiral Centers Analysis 🔬")
